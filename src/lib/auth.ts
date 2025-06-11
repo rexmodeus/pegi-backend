@@ -55,6 +55,23 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ account, profile }) {
+      if (!profile?.email) {
+        throw new Error("Email is required for sign-in");
+      }
+
+      await prisma.user.upsert({
+        where: { email: profile.email },
+        update: {
+          name: profile.name,
+        },
+        create: {
+          email: profile.email,
+          name: profile.name,
+        },
+      });
+      return true;
+    },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
