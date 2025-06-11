@@ -55,6 +55,16 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Allow redirects to the base URL or any URL that starts with the base URL
+      if (url.startsWith("myapp://")) {
+        return url;
+      }
+      // Default behavior for web URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
+    },
     async signIn({ account, profile }) {
       if (!profile?.email) {
         throw new Error("Email is required for sign-in");
