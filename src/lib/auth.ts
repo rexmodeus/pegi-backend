@@ -59,7 +59,9 @@ export const authOptions: NextAuthOptions = {
       if (!profile?.email) {
         throw new Error("Email is required for sign-in");
       }
-
+      if (account?.provider === "google" && !profile.email) {
+        throw new Error("Google sign-in requires an email");
+      }
       await prisma.user.upsert({
         where: { email: profile.email },
         update: {
