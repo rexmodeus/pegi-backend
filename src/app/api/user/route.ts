@@ -137,6 +137,7 @@ export async function PUT(req: Request) {
   }
 
   // Prepare update data
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   const updateData: any = { name, email, phoneNumber, gender };
 
   // Only update avatar if provided

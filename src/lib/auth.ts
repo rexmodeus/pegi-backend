@@ -57,7 +57,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ account }) {
       // Allow OAuth signins
       if (account?.provider === "google") {
         return true;
