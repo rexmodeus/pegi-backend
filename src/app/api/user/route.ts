@@ -124,7 +124,7 @@ export async function PUT(req: Request) {
   }
 
   const body = await req.json();
-  const { name, email, phoneNumber, gender, avatarUrl } = body;
+  const { name, email, phoneNumber, gender, image } = body;
 
   if (!name || !email || !phoneNumber || !gender) {
     return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -141,8 +141,8 @@ export async function PUT(req: Request) {
   const updateData: any = { name, email, phoneNumber, gender };
 
   // Only update avatar if provided
-  if (avatarUrl !== undefined) {
-    updateData.avatarUrl = avatarUrl;
+  if (image !== undefined) {
+    updateData.image = image;
   }
 
   // Update user details
