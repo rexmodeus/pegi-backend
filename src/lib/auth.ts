@@ -16,8 +16,15 @@ export const authOptions: NextAuthOptions = {
   },
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code",
+        },
+      },
     }),
     CredentialsProvider({
       name: "Credentials",
@@ -29,23 +36,18 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
-
         const user = await prisma.user.findUnique({
           where: {
             email: credentials.email,
           },
         });
-
         if (!user || !user.password) {
           return null;
         }
-
         const isValid = await compare(credentials.password, user.password);
-
         if (!isValid) {
           return null;
         }
-
         return {
           id: user.id,
           email: user.email || "",
@@ -55,34 +57,16 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async redirect({ url, baseUrl }) {
-      // Allow redirects to the base URL or any URL that starts with the base URL
-      if (url.startsWith("myapp://")) {
-        return url;
+    async signIn({ user, account, profile, email, credentials }) {
+      // Allow OAuth signins
+      if (account?.provider === "google") {
+        return true;
       }
-      // Default behavior for web URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
-    },
-    async signIn({ account, profile }) {
-      if (!profile?.email) {
-        throw new Error("Email is required for sign-in");
+      // Allow credentials signin
+      if (account?.provider === "credentials") {
+        return true;
       }
-      if (account?.provider === "google" && !profile.email) {
-        throw new Error("Google sign-in requires an email");
-      }
-      await prisma.user.upsert({
-        where: { email: profile.email },
-        update: {
-          name: profile.name,
-        },
-        create: {
-          email: profile.email,
-          name: profile.name,
-        },
-      });
-      return true;
+      return false;
     },
     async session({ session, token }) {
       if (session.user) {
@@ -90,9 +74,12 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
+      }
+      if (account?.provider === "google") {
+        token.accessToken = account.access_token;
       }
       return token;
     },

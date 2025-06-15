@@ -45,6 +45,29 @@ export async function POST(req: Request) {
   const bookingData = await req.json();
 
   try {
+    const schedule = await prisma.schedule.findUnique({
+      where: { id: bookingData.scheduleId },
+    });
+    if (!schedule) {
+      return new Response(JSON.stringify({ error: "Schedule not found" }), {
+        status: 404,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json",
+        },
+      });
+    }
+
+    if (schedule.seats <= 0) {
+      return new Response(JSON.stringify({ error: "No seats available" }), {
+        status: 400,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json",
+        },
+      });
+    }
+
     const booking = await prisma.booking.create({
       data: {
         userId,
@@ -56,6 +79,26 @@ export async function POST(req: Request) {
         type: bookingData.type,
       },
     });
+
+    if (bookingData.type !== "paket") {
+      const schedule2 = await prisma.schedule.update({
+        where: { id: bookingData.scheduleId },
+        data: {
+          seats: {
+            increment: -1,
+          },
+        },
+      });
+      if (!booking || !schedule2) {
+        return new Response(JSON.stringify({ error: "Booking failed" }), {
+          status: 500,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json",
+          },
+        });
+      }
+    }
 
     return new Response(JSON.stringify(booking), {
       status: 201,
